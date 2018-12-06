@@ -1,6 +1,5 @@
 (ns advent-of-code2018.day01
-  (:require [clojure.java.io :as io]
-            [clojure.string :as str]))
+  (:require [clojure.java.io :as io]))
 
 ;; --- Day 1: Chronal Calibration ---
 
