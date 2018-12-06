@@ -31,11 +31,11 @@
 
 ;; Starting with a frequency of zero, what is the resulting frequency after all of the changes in frequency have been applied?
 
-(-> (io/resource "day01-1.txt")
-    (slurp)
-    (str/split #"\n")
-    (->> (map #(Long/parseLong %))
-         (reduce +)))
+(->> (io/resource "day01-1.txt")
+     (io/reader)
+     (line-seq)
+     (map #(Long/parseLong %))
+     (reduce +))
 
 ;; --- Part Two ---
 
@@ -62,10 +62,10 @@
 
 ;; What is the first frequency your device reaches twice?
 
-(let [fc (-> (io/resource "day01-2.txt")
-             (slurp)
-             (str/split #"\n")
-             (->> (map #(Long/parseLong %))))]
+(let [fc (->> (io/resource "day01-2.txt")
+              (io/reader)
+              (line-seq)
+              (map #(Long/parseLong %)))]
   (loop [seen #{}
          current 0
          freqs (apply concat (repeat fc))]
