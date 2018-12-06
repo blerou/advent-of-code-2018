@@ -30,11 +30,16 @@
 
 ;; Starting with a frequency of zero, what is the resulting frequency after all of the changes in frequency have been applied?
 
-(->> (io/resource "day01-1.txt")
-     (io/reader)
-     (line-seq)
-     (map #(Long/parseLong %))
-     (reduce +))
+(defn read-input
+  [resource-name]
+  (->> (io/resource resource-name)
+       (io/reader)
+       (line-seq)
+       (map #(Long/parseLong %))))
+
+(defn part-one []
+  (->> (read-input "day01-1.txt")
+       (reduce +)))
 
 ;; --- Part Two ---
 
@@ -61,17 +66,15 @@
 
 ;; What is the first frequency your device reaches twice?
 
-(let [fc (->> (io/resource "day01-2.txt")
-              (io/reader)
-              (line-seq)
-              (map #(Long/parseLong %)))]
-  (loop [seen #{}
-         current 0
-         freqs (apply concat (repeat fc))]
-    (if (seen current)
-      current
-      (when-not (empty? freqs)
-        (recur
-         (conj seen current)
-         (+ current (first freqs))
-         (rest freqs))))))
+(defn part-two []
+  (let [freqs (read-input "day01-2.txt")]
+    (loop [seen #{}
+           current 0
+           freqs (apply concat (repeat freqs))]
+      (if (seen current)
+        current
+        (when-not (empty? freqs)
+          (recur
+           (conj seen current)
+           (+ current (first freqs))
+           (rest freqs)))))))

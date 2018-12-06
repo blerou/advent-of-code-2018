@@ -27,36 +27,24 @@
 
 ;; What is the checksum for your list of box IDs?
 
-(let [lines (->> (io/resource "day02-1.txt")
-                 (io/reader)
-                 (line-seq))
-      [x2 x3] (->> lines
-                   (map frequencies)
-                   (map #(zipmap (vals %) (keys %)))
-                   (reduce
-                    (fn [[x2 x3] m]
-                      (let [y2 (if (get m 2) 1 0)
-                            y3 (if (get m 3) 1 0)]
-                        [(+ x2 y2) (+ x3 y3)]))
-                    [0 0]))]
-  (* x2 x3))
+(defn read-input [resource-name]
+  (->> (io/resource resource-name)
+       (io/reader)
+       (line-seq)))
 
-;; or w/ one threading
-
-(->> (io/resource "day02-1.txt")
-     (io/reader)
-     (line-seq)
-     ; stats
-     (map frequencies)
-     (map #(zipmap (vals %) (keys %)))
-     (reduce
-      (fn [[x2 x3] m]
-        (let [y2 (if (get m 2) 1 0)
-              y3 (if (get m 3) 1 0)]
-          [(+ x2 y2) (+ x3 y3)]))
-      [0 0])
-     ; result
-     (apply *))
+(defn part-one []
+  (->> (read-input "day02-1.txt")
+       ; stats
+       (map frequencies)
+       (map #(zipmap (vals %) (keys %)))
+       (reduce
+        (fn [[x2 x3] stat]
+          (let [x2 (if (stat 2) (inc x2) x2)
+                x3 (if (stat 3) (inc x3) x3)]
+            [x2 x3]))
+        [0 0])
+       ; result
+       (apply *)))
 
 ;; --- Part Two ---
 
@@ -75,17 +63,30 @@
 
 ;; What letters are common between the two correct box IDs? (In the example above, this is found by removing the differing character from either ID, producing fgij.)
 
-(let [lines (->> (io/resource "day02-2.txt")
-                 (io/reader)
-                 (line-seq))
-      [line1 line2] (for [line1 lines
-                          line2 lines
-                          :when (->> (map = line1 line2)
-                                     (filter false?)
-                                     (count)
-                                     (= 1))]
-                      line1)]
-  (->> (map #(do [%1 %2]) line1 line2)
-       (filter #(apply = %))
-       (map first)
-       (apply str)))
+(defn one-char-diff
+  "Returns the pair of lines only when there's exactly one character difference."
+  [[line1 line2]]
+  (when (->> (map = line1 line2)
+             (filter false?)
+             (count)
+             (= 1))
+    [line1 line2]))
+
+(defn matching-lines
+  "Provides a pair of lines that has exactly one character difference."
+  [lines]
+  (when-not (empty? lines)
+    (if-let [result (->> (map vector
+                              (repeat (first lines))
+                              (rest lines))
+                         (some one-char-diff))]
+      result
+      (recur (rest lines)))))
+
+(defn part-two []
+  (let [lines (read-input "day02-2.txt")
+        [line1 line2] (matching-lines lines)]
+    (->> (map vector line1 line2)
+         (filter #(apply = %))
+         (map first)
+         (apply str))))
