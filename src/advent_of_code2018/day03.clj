@@ -43,13 +43,18 @@
 
 ;; If the Elves all proceed with their own plans, none of them will have enough fabric. How many square inches of fabric are within two or more claims?
 
-(defrecord ElfPlan [left top width height])
+(defrecord ElfPlan [id left top width height])
 
 (defn parse-line [line]
-  (->> (re-find #"#\d+ @ (\d+),(\d+): (\d+)x(\d+)" line)
+  (->> (re-find #"#(\d+) @ (\d+),(\d+): (\d+)x(\d+)" line)
        (rest)
        (map #(Long/parseLong %))
        (apply ->ElfPlan)))
+
+(comment
+  (def plan1 (parse-line "#1 @ 1,3: 4x4"))
+  (def plan2 (parse-line "#2 @ 3,1: 4x4"))
+  (def plan3 (parse-line "#3 @ 5,5: 2x2")))
 
 (defn read-input [resource-name]
   (->> (io/resource resource-name)
@@ -63,9 +68,51 @@
     [(+ w (:left plan))
      (+ h (:top plan))]))
 
+(comment
+  (squares plan1)
+  (squares plan3))
+
 (defn part-one []
   (->> (read-input "day03-1.txt")
        (mapcat squares)
        (frequencies)
        (filter #(> (val %) 1))
        (count)))
+
+;; --- Part Two ---
+
+;; Amidst the chaos, you notice that exactly one claim doesn't overlap by even a single square inch of fabric with any other claim. If you can somehow draw attention to it, maybe the Elves will be able to make Santa's suit after all!
+
+;; For example, in the claims above, only claim 3 is intact after all claims are made.
+
+;; What is the ID of the only claim that doesn't overlap?
+
+(defn right [plan] (dec (+ (:left plan) (:width plan))))
+(defn bottom [plan] (dec (+ (:top plan) (:height plan))))
+
+(defn intact [plan1 plan2]
+  (or (< (right plan1) (:left plan2))
+      (> (:left plan1) (right plan2))
+      (< (bottom plan1) (:top plan2))
+      (> (:top plan1) (bottom plan2))))
+
+(comment
+  (intact plan1 plan2)
+  (intact plan1 plan3))
+
+(defn unique [plans]
+  (loop [ps plans]
+    (when-not (empty? ps)
+      (let [plan1 (first ps)
+            itself-or-intact? (some-fn #{plan1} #(intact plan1 %))]
+        (if (every? itself-or-intact? plans)
+            plan1
+            (recur (rest ps)))))))
+
+(comment
+  (unique [plan1 plan2 plan3]))
+
+(defn part-two []
+  (-> (read-input "day03-2.txt")
+      (unique)
+      :id))
