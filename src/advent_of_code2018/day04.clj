@@ -114,41 +114,42 @@
    +
    sleep-log))
 
-(defn top-sleeper-guard [guards-sleeps]
-  (first
-   (transduce
-    (map (fn [[id sleep-log]]
-           [id (full-length sleep-log)]))
-    (partial max-key second)
-    [nil 0]
-    guards-sleeps)))
+(defn top-sleeper [guards-sleeps]
+  (->> guards-sleeps
+       (transduce
+        (map (fn [[id sleep-log]]
+               {:id id :length (full-length sleep-log)}))
+        (partial max-key :length)
+        {:length 0})))
 
 (defn top-minute-count [sleep-log]
-  (let [stat (->> sleep-log
-                  (mapcat #(range (:sleep %) (:wake %)))
-                  (frequencies))]
-    (transduce
-     (map (fn [[min cnt]] {:minute min :count cnt}))
-     (partial max-key :count)
-     {:count 0}
-     stat)))
-
-(defn most-minute-asleep [sleep-log]
-  (:minute (top-minute-count sleep-log)))
+  (let [id (-> sleep-log (first) :id)]
+    (->> sleep-log
+         (mapcat #(range (:sleep %) (:wake %)))
+         (frequencies)
+         (transduce
+          (map (fn [[min cnt]] {:id id :minute min :count cnt}))
+          (partial max-key :count)
+          {:count 0}))))
 
 (comment
-  (let [sleep-log (read-input "day04-sample.txt")
-        guards-sleeps (group-by :id sleep-log)
-        top-sleeper (top-sleeper-guard guards-sleeps)]
-    (most-minute-asleep (guards-sleeps top-sleeper))))
+  (let [guards-sleeps (->> (read-input "day04-sample.txt")
+                           (group-by :id))]
+    (->> guards-sleeps
+         (top-sleeper)
+         :id
+         guards-sleeps
+         (top-minute-count))))
 
 (defn part-one []
-  (let [sleep-log (read-input "day04-1.txt")
-        guards-sleeps (group-by :id sleep-log)
-        top-sleeper (top-sleeper-guard guards-sleeps)
-        most-asleep-min (most-minute-asleep (guards-sleeps top-sleeper))]
-    (* most-asleep-min
-       top-sleeper)))
+  (let [guards-sleeps (->> (read-input "day04-1.txt")
+                           (group-by :id))
+        top (->> guards-sleeps
+                 (top-sleeper)
+                 :id
+                 guards-sleeps
+                 (top-minute-count))]
+    (* (:minute top) (:id top))))
 
 ;; --- Part Two ---
 
@@ -160,9 +161,7 @@
 
 (defn most-frequent-sleep [guards-sleeps]
   (transduce
-     (map (fn [[id sleep-log]]
-            (let [top (top-minute-count sleep-log)]
-              (assoc top :id id))))
+     (map (fn [[id sleep-log]] (top-minute-count sleep-log)))
      (partial max-key :count)
      {:count 0}
      guards-sleeps))
