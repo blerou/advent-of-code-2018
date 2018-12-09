@@ -123,15 +123,18 @@
     [nil 0]
     guards-sleeps)))
 
-(defn most-minute-asleep [sleep-log]
+(defn top-minute-count [sleep-log]
   (let [stat (->> sleep-log
                   (mapcat #(range (:sleep %) (:wake %)))
                   (frequencies))]
-    (key
-     (reduce
-      #(max-key val %1 %2)
-      (first stat)
-      (rest stat)))))
+    (transduce
+     (map (fn [[min cnt]] {:minute min :count cnt}))
+     (partial max-key :count)
+     {:count 0}
+     stat)))
+
+(defn most-minute-asleep [sleep-log]
+  (:minute (top-minute-count sleep-log)))
 
 (comment
   (let [sleep-log (read-input "day04-sample.txt")
@@ -146,3 +149,31 @@
         most-asleep-min (most-minute-asleep (guards-sleeps top-sleeper))]
     (* most-asleep-min
        top-sleeper)))
+
+;; --- Part Two ---
+
+;; Strategy 2: Of all guards, which guard is most frequently asleep on the same minute?
+
+;; In the example above, Guard #99 spent minute 45 asleep more than any other guard or minute - three times in total. (In all other cases, any guard spent any minute asleep at most twice.)
+
+;; What is the ID of the guard you chose multiplied by the minute you chose? (In the above example, the answer would be 99 * 45 = 4455.)
+
+(defn most-frequent-sleep [guards-sleeps]
+  (transduce
+     (map (fn [[id sleep-log]]
+            (let [top (top-minute-count sleep-log)]
+              (assoc top :id id))))
+     (partial max-key :count)
+     {:count 0}
+     guards-sleeps))
+
+(comment
+  (let [gs (->> (read-input "day04-sample.txt")
+                (group-by :id))]
+    (most-frequent-sleep gs)))
+
+(defn part-two []
+  (let [s (->> (read-input "day04-2.txt")
+               (group-by :id)
+               (most-frequent-sleep))]
+    (* (:id s) (:minute s))))
